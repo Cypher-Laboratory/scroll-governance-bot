@@ -60,19 +60,19 @@ class ScrollGovernanceBot {
 
   private setupBot() {
     this.bot.start((ctx) => {
-      const welcomeMessage = `🏛️ *Welcome to Scroll Governance Bot\\!*
+      const welcomeMessage = `🏛️ **Welcome to Scroll Governance Bot!**
 
-I monitor Scroll governance for new proposals and send you notifications\\.
+I monitor Scroll governance for new proposals and send you notifications.
 
-*Available Commands:*
-• \`/subscribe\` \\- Subscribe to proposal notifications
-• \`/unsubscribe\` \\- Unsubscribe from notifications  
-• \`/status\` \\- Check bot and subscription status
-• \`/help\` \\- Show this help message
+**Available Commands:**
+• \`/subscribe\` - Subscribe to proposal notifications
+• \`/unsubscribe\` - Unsubscribe from notifications  
+• \`/status\` - Check bot and subscription status
+• \`/help\` - Show this help message
 
-Use \`/subscribe\` to start receiving notifications about new Scroll governance proposals\\!`;
+Use \`/subscribe\` to start receiving notifications about new Scroll governance proposals!`;
       
-      ctx.reply(welcomeMessage, { parse_mode: 'MarkdownV2' });
+      ctx.reply(welcomeMessage, { parse_mode: 'Markdown' });
     });
 
     this.bot.command('subscribe', (ctx) => {
@@ -95,17 +95,15 @@ Use \`/subscribe\` to start receiving notifications about new Scroll governance 
       this.subscribers.set(chatId, subscriber);
       this.saveSubscribers();
 
-      const contractEscaped = GOVERNANCE_CONTRACT?.replace(/\./g, '\\.').replace(/_/g, '\\_') || '';
-      
-      ctx.reply(`🎉 *Successfully subscribed\\!*
+      ctx.reply(`🎉 **Successfully subscribed!**
 
-You will now receive notifications when new Scroll governance proposals are created\\.
+You will now receive notifications when new Scroll governance proposals are created.
 
 • Subscriber ID: ${chatId}
-• Monitoring: \`${contractEscaped}\`
+• Monitoring: ${GOVERNANCE_CONTRACT}
 
-Use \`/unsubscribe\` anytime to stop receiving notifications\\.`, 
-        { parse_mode: 'MarkdownV2' });
+Use \`/unsubscribe\` anytime to stop receiving notifications.`, 
+        { parse_mode: 'Markdown' });
 
       console.log(`📥 New subscriber: ${chatId} (${username || firstName || 'Unknown'})`);
     });
@@ -121,12 +119,12 @@ Use \`/unsubscribe\` anytime to stop receiving notifications\\.`,
       this.subscribers.delete(chatId);
       this.saveSubscribers();
 
-      ctx.reply(`👋 *Successfully unsubscribed\\!*
+      ctx.reply(`👋 **Successfully unsubscribed!**
 
-You will no longer receive Scroll governance proposal notifications\\.
+You will no longer receive Scroll governance proposal notifications.
 
-Use \`/subscribe\` anytime to start receiving notifications again\\.`, 
-        { parse_mode: 'MarkdownV2' });
+Use \`/subscribe\` anytime to start receiving notifications again.`, 
+        { parse_mode: 'Markdown' });
 
       console.log(`📤 Unsubscribed: ${chatId}`);
     });
@@ -135,13 +133,12 @@ Use \`/subscribe\` anytime to start receiving notifications again\\.`,
       const chatId = ctx.chat.id;
       const isSubscribed = this.subscribers.has(chatId);
       const totalSubscribers = this.subscribers.size;
-      const contractEscaped = GOVERNANCE_CONTRACT?.replace(/\./g, '\\.').replace(/_/g, '\\_') || '';
 
-      let statusMessage = `📊 *Bot Status:*
+      let statusMessage = `📊 **Bot Status:**
 
 • Last processed block: ${this.lastProcessedBlock}
 • Total subscribers: ${totalSubscribers}
-• Monitoring contract: \`${contractEscaped}\`
+• Monitoring contract: \`${GOVERNANCE_CONTRACT}\`
 • Check interval: ${PROPOSAL_INTERVAL_CHECK_MINUTES} minutes
 • Your subscription: ${isSubscribed ? '✅ Active' : '❌ Not subscribed'}`;
 
@@ -150,30 +147,30 @@ Use \`/subscribe\` anytime to start receiving notifications again\\.`,
         statusMessage += `\n• Subscribed since: ${new Date(subscriber.subscribedAt).toLocaleDateString()}`;
       }
 
-      ctx.reply(statusMessage, { parse_mode: 'MarkdownV2' });
+      ctx.reply(statusMessage, { parse_mode: 'Markdown' });
     });
 
     this.bot.command('help', (ctx) => {
-      const helpMessage = `🤖 *Scroll Governance Bot Help*
+      const helpMessage = `🤖 **Scroll Governance Bot Help**
 
-*Available Commands:*
-• \`/start\` \\- Welcome message and introduction
-• \`/subscribe\` \\- Subscribe to proposal notifications
-• \`/unsubscribe\` \\- Unsubscribe from notifications
-• \`/status\` \\- Check bot and subscription status
-• \`/help\` \\- Show this help message
+**Available Commands:**
+• \`/start\` - Welcome message and introduction
+• \`/subscribe\` - Subscribe to proposal notifications
+• \`/unsubscribe\` - Unsubscribe from notifications
+• \`/status\` - Check bot and subscription status
+• \`/help\` - Show this help message
 
-*About:*
-This bot monitors the Scroll governance contract for new proposals and sends real\\-time notifications to subscribers\\.
+**About:**
+This bot monitors the Scroll governance contract for new proposals and sends real-time notifications to subscribers.
 
-*Contract Details:*
-• Address: \`${GOVERNANCE_CONTRACT?.replace(/\./g, '\\.').replace(/_/g, '\\_') || ''}\`
+**Contract Details:**
+• Address: \`${GOVERNANCE_CONTRACT}\`
 • Network: Scroll Mainnet
 • Event: ProposalCreated
 
-*Need help?* Just use the commands above to manage your subscription\\!`;
+**Need help?** Just use the commands above to manage your subscription!`;
 
-      ctx.reply(helpMessage, { parse_mode: 'MarkdownV2' });
+      ctx.reply(helpMessage, { parse_mode: 'Markdown' });
     });
 
     // Handle unknown commands
@@ -272,57 +269,29 @@ This bot monitors the Scroll governance contract for new proposals and sends rea
     }
   }
 
-  private escapeMarkdownV2(text: string): string {
-    return text
-      .replace(/\\/g, '\\\\')
-      .replace(/_/g, '\\_')
-      .replace(/\*/g, '\\*')
-      .replace(/\[/g, '\\[')
-      .replace(/\]/g, '\\]')
-      .replace(/\(/g, '\\(')
-      .replace(/\)/g, '\\)')
-      .replace(/~/g, '\\~')
-      .replace(/`/g, '\\`')
-      .replace(/>/g, '\\>')
-      .replace(/#/g, '\\#')
-      .replace(/\+/g, '\\+')
-      .replace(/-/g, '\\-')
-      .replace(/=/g, '\\=')
-      .replace(/\|/g, '\\|')
-      .replace(/\{/g, '\\{')
-      .replace(/\}/g, '\\}')
-      .replace(/\./g, '\\.')
-      .replace(/!/g, '\\!');
-  }
-
   private formatProposalMessage(proposal: ProposalData, blockNumber: number): string {
     const shortDescription = proposal.description.length > 500 
       ? proposal.description.substring(0, 500) + '...' 
       : proposal.description;
 
-    // Escape special markdown characters in the description
-    const escapedDescription = this.escapeMarkdownV2(shortDescription);
-    const escapedContract = this.escapeMarkdownV2(GOVERNANCE_CONTRACT || '');
-    const escapedProposer = this.escapeMarkdownV2(proposal.proposer);
+    return `🏛️ **NEW SCROLL GOVERNANCE PROPOSAL**
 
-    return `🏛️ *NEW SCROLL GOVERNANCE PROPOSAL*
+📋 **Proposal ID:** ${proposal.proposalId}
+👤 **Proposer:** \`${proposal.proposer}\`
+📦 **Block:** ${blockNumber}
 
-📋 *Proposal ID:* ${proposal.proposalId}
-👤 *Proposer:* \`${escapedProposer}\`
-📦 *Block:* ${blockNumber}
+🗳️ **Voting Period:**
+- Start Block: ${proposal.startBlock} (~${blockNumberToDate(proposal.startBlock)})
+- End Block: ${proposal.endBlock} (~${blockNumberToDate(proposal.endBlock)})
 
-🗳️ *Voting Period:*
-• Start Block: ${proposal.startBlock} (~${this.escapeMarkdownV2(blockNumberToDate(proposal.startBlock))})
-• End Block: ${proposal.endBlock} (~${this.escapeMarkdownV2(blockNumberToDate(proposal.endBlock))})
-
-📝 *Description:*
+📝 **Description:**
 \`\`\`Markdown
-${escapedDescription}
+${shortDescription}
 \`\`\`
-[View full proposal](https://gov.scroll.io/proposals/${proposal.proposalId})
+**[full proposal](https://gov.scroll.io/proposals/${proposal.proposalId})
 
-🔗 *Contract:* \`${escapedContract}\`
-📊 *Proposal Type:* ${proposal.proposalType}
+🔗 **Contract:** \`${GOVERNANCE_CONTRACT}\`
+📊 **Proposal Type:** ${proposal.proposalType}
 
 [View on Scroll Explorer](https://scrollscan.com/tx/${proposal.txHash})`;
   }
@@ -340,7 +309,7 @@ ${escapedDescription}
     for (const [chatId, subscriber] of this.subscribers) {
       try {
         await this.bot.telegram.sendMessage(chatId, message, {
-          parse_mode: 'MarkdownV2',
+          parse_mode: 'Markdown',
         });
         successCount++;
       } catch (error: any) {
@@ -450,6 +419,7 @@ process.once('SIGTERM', () => {
 
 // Start monitoring
 bot.start().catch(console.error);
+
 
 function blockNumberToDate(blockNumber: string): string {
   const blockTime = 3; // Average block time in seconds on Scroll
