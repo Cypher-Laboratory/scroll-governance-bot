@@ -141,3 +141,6 @@ vite.config.ts.timestamp-*
 
 src/last_block.txt
 src/subscribers.json
+simulation/cache
+simulation/broadcast
+simulation/out
