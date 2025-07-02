@@ -5,7 +5,7 @@ import "forge-std/Script.sol";
 import "../src/TestGovernance.sol";
 
 contract FireEvent is Script {
-    address public constant GOVERNANCE_ADDRESS = address(0x70D780fc8E95d932C539A89D858EB5D2dD221daa);
+    address public constant GOVERNANCE_ADDRESS = address(0x9068e943F587d6a4c93748BC7c30671386E0FA9A); // holesky
 
     function run() external {
         TestGovernance governance = TestGovernance(GOVERNANCE_ADDRESS);
