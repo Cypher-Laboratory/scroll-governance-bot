@@ -7,7 +7,8 @@
     "build": "rm -rf dist && tsc",
     "start": "node dist/index.js",
     "dev": "ts-node src/index.ts",
-    "watch": "nodemon --exec ts-node src/index.ts"
+    "watch": "nodemon --exec ts-node src/index.ts",
+    "setup-commands": "ts-node src/setupCommands.ts"
   },
   "keywords": [
     "telegram",

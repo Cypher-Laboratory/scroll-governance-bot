@@ -1,3 +1,4 @@
+import { setupBotCommands } from './setupCommands';
 import { Telegraf } from 'telegraf';
 import { ethers } from 'ethers';
 import fs from 'fs';
@@ -383,6 +384,15 @@ ${shortDescription}
 
   public async start() {
     console.log('🚀 Starting Scroll Governance Bot...');
+
+    // Setup bot commands first
+    try {
+      await setupBotCommands();
+    } catch (error) {
+      console.warn('⚠️ Failed to setup bot commands: ', error);
+      console.log('Exiting ...');
+      process.exit(1);
+    }
 
     // Initial check
     await this.checkForNewProposals();
