@@ -17,7 +17,7 @@ You can directly pull the latest Dockerized version of the bot from our official
 ```
 docker pull cypherlab/scroll-governance-bot:latest
 ```  
-📦 Docker Hub repository: https://hub.docker.com/repository/docker/cypherlab/scroll-governance-bot/general  
+📦 [Docker Hub repository](https://hub.docker.com/repository/docker/cypherlab/scroll-governance-bot/general)  
 This image is automatically updated with the latest stable version of the bot, based on the most recent commit to the repository. This allows you to deploy it quickly without needing to build it yourself.
 
 ## Features
