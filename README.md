@@ -5,7 +5,7 @@ A TypeScript-based Telegram bot that monitors [Scroll governance proposals](http
 ## 📡 Live Telegram Bot
 
 Curently you can try the bot instantly without hosting it yourself!  
-[t.me/scroll_governance_bot](t.me/scroll_governance_bot)  
+[t.me/scroll_governance_bot](https://t.me/scroll_governance_bot)  
 
 The bot will send you real-time notifications whenever a new governance proposal is published on Scroll.  
 
