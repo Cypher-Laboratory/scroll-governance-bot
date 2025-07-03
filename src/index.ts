@@ -9,6 +9,8 @@ const BOT_TOKEN = process.env.BOT_TOKEN!;
 const SCROLL_RPC_URL = process.env.SCROLL_RPC_URL || 'https://rpc.scroll.io';
 const PROPOSAL_INTERVAL_CHECK_MINUTES = parseInt(process.env.PROPOSAL_INTERVAL_CHECK_MINUTES || '5'); // Check for new proposals every x minutes, default is 5 minutes
 const MAX_BLOCKS_PER_CHECK = parseInt(process.env.MAX_BLOCKS_PER_CHECK || '499'); // Maximum number of blocks to check in one go, default is 499 blocks
+const START_BLOCK_NUMBER = parseInt(process.env.START_BLOCK_NUMBER || '0'); // Start checking from this block number, default is 0
+
 // Contract details
 const GOVERNANCE_CONTRACT = process.env.GOVERNANCE_CONTRACT;
 const PROPOSAL_CREATED_TOPIC = '0xc8df7ff219f3c0358e14500814d8b62b443a4bebf3a596baa60b9295b1cf1bde';
@@ -209,12 +211,12 @@ This bot monitors the Scroll governance contract for new proposals and sends rea
     try {
       if (fs.existsSync(LAST_BLOCK_FILE)) {
         const blockNumber = parseInt(fs.readFileSync(LAST_BLOCK_FILE, 'utf8').trim());
-        return isNaN(blockNumber) ? 0 : blockNumber;
+        return isNaN(blockNumber) ? START_BLOCK_NUMBER : blockNumber;
       }
     } catch (error) {
       console.error('Error loading last processed block:', error);
     }
-    return 0;
+    return START_BLOCK_NUMBER;
   }
 
   private saveLastProcessedBlock(blockNumber: number) {
@@ -338,7 +340,7 @@ ${shortDescription}
     try {
       const currentBlock = await this.getCurrentBlock();
 
-      const fromBlock = this.lastProcessedBlock === 0 ? currentBlock - 499 : this.lastProcessedBlock + 1;
+      const fromBlock = this.lastProcessedBlock;
 
       if (fromBlock > currentBlock) {
         return; // No new blocks to check
