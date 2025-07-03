@@ -1,1 +1,6 @@
 .env
+src/last_block.txt
+src/subscribers.json
+dist/
+node_modules/
+simulation/
