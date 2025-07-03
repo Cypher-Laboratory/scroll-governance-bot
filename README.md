@@ -1,6 +1,24 @@
-# Scroll Governance Telegram Bot
+# 📜 Scroll Governance Telegram Bot
 
-A TypeScript-based Telegram bot that monitors Scroll governance for new proposals and sends real-time notifications.
+A TypeScript-based Telegram bot that monitors [Scroll governance proposals](https://gov.scroll.io/proposals) and sends real-time notifications.
+
+## 📡 Live Telegram Bot
+
+Curently you can try the bot instantly without hosting it yourself!  
+[t.me/scroll_governance_bot](t.me/scroll_governance_bot)  
+
+The bot will send you real-time notifications whenever a new governance proposal is published on Scroll.  
+
+⚠️ Note: This bot is hosted by our team and for free. Access may be suspended at any time without notice. For a long-term solution, we recommend deploying your own instance by following the instructions above.
+
+## 🐳 Docker
+
+You can directly pull the latest Dockerized version of the bot from our official Docker Hub repository:
+```
+docker pull cypherlab/scroll-governance-bot:latest
+```  
+📦 Docker Hub repository: https://hub.docker.com/repository/docker/cypherlab/scroll-governance-bot/general  
+This image is automatically updated with the latest stable version of the bot, based on the most recent commit to the repository. This allows you to deploy it quickly without needing to build it yourself.
 
 ## Features
 
