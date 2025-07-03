@@ -349,7 +349,7 @@ ${shortDescription}
       // Fetch by batches of maximum MAX_BLOCKS_PER_CHECK block ranges
       let tmpFromBlock = fromBlock;
       let tmpToBlock = min(fromBlock + MAX_BLOCKS_PER_CHECK, currentBlock);
-      while (tmpFromBlock <= currentBlock) {
+      while (tmpFromBlock < currentBlock) {
         console.log(`📦 Fetching logs from block ${tmpFromBlock} to ${tmpToBlock} (${tmpToBlock - tmpFromBlock} blocks)`);
         const logs = await this.provider.getLogs({
           address: GOVERNANCE_CONTRACT,
