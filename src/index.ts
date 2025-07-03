@@ -276,7 +276,7 @@ This bot monitors the Scroll governance contract for new proposals and sends rea
 
     return `🏛️ **NEW SCROLL GOVERNANCE PROPOSAL**
 
-📋 **Proposal ID:** ${proposal.proposalId}
+📋 **Proposal ID:** \`${proposal.proposalId}\`
 👤 **Proposer:** \`${proposal.proposer}\`
 📦 **Block:** ${blockNumber}
 
