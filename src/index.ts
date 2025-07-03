@@ -7,8 +7,8 @@ import "dotenv/config";
 // Configuration
 const BOT_TOKEN = process.env.BOT_TOKEN!;
 const SCROLL_RPC_URL = process.env.SCROLL_RPC_URL || 'https://rpc.scroll.io';
-const PROPOSAL_INTERVAL_CHECK_MINUTES =  parseInt(process.env.PROPOSAL_INTERVAL_CHECK_MINUTES || '5'); // Check for new proposals every x minutes, default is 5 minutes
-
+const PROPOSAL_INTERVAL_CHECK_MINUTES = parseInt(process.env.PROPOSAL_INTERVAL_CHECK_MINUTES || '5'); // Check for new proposals every x minutes, default is 5 minutes
+const MAX_BLOCKS_PER_CHECK = parseInt(process.env.MAX_BLOCKS_PER_CHECK || '499'); // Maximum number of blocks to check in one go, default is 499 blocks
 // Contract details
 const GOVERNANCE_CONTRACT = process.env.GOVERNANCE_CONTRACT;
 const PROPOSAL_CREATED_TOPIC = '0xc8df7ff219f3c0358e14500814d8b62b443a4bebf3a596baa60b9295b1cf1bde';
@@ -54,7 +54,7 @@ class ScrollGovernanceBot {
     this.provider = new ethers.JsonRpcProvider(SCROLL_RPC_URL);
     this.lastProcessedBlock = this.loadLastProcessedBlock();
     this.subscribers = this.loadSubscribers();
-    
+
     this.setupBot();
   }
 
@@ -71,7 +71,7 @@ I monitor Scroll governance for new proposals and send you notifications.
 • \`/help\` - Show this help message
 
 Use \`/subscribe\` to start receiving notifications about new Scroll governance proposals!`;
-      
+
       ctx.reply(welcomeMessage, { parse_mode: 'Markdown' });
     });
 
@@ -102,7 +102,7 @@ You will now receive notifications when new Scroll governance proposals are crea
 • Subscriber ID: ${chatId}
 • Monitoring: ${GOVERNANCE_CONTRACT}
 
-Use \`/unsubscribe\` anytime to stop receiving notifications.`, 
+Use \`/unsubscribe\` anytime to stop receiving notifications.`,
         { parse_mode: 'Markdown' });
 
       console.log(`📥 New subscriber: ${chatId} (${username || firstName || 'Unknown'})`);
@@ -123,7 +123,7 @@ Use \`/unsubscribe\` anytime to stop receiving notifications.`,
 
 You will no longer receive Scroll governance proposal notifications.
 
-Use \`/subscribe\` anytime to start receiving notifications again.`, 
+Use \`/subscribe\` anytime to start receiving notifications again.`,
         { parse_mode: 'Markdown' });
 
       console.log(`📤 Unsubscribed: ${chatId}`);
@@ -191,11 +191,11 @@ This bot monitors the Scroll governance contract for new proposals and sends rea
         const data = fs.readFileSync(SUBSCRIBERS_FILE, 'utf8');
         const subscribersArray = JSON.parse(data);
         const subscribersMap = new Map<number, Subscriber>();
-        
+
         subscribersArray.forEach((subscriber: Subscriber) => {
           subscribersMap.set(subscriber.chatId, subscriber);
         });
-        
+
         console.log(`📋 Loaded ${subscribersMap.size} subscribers`);
         return subscribersMap;
       }
@@ -241,7 +241,7 @@ This bot monitors the Scroll governance contract for new proposals and sends rea
       const abi = [
         "event ProposalCreated(uint256 indexed proposalId, address indexed proposer, address[] targets, uint256[] values, string[] signatures, bytes[] calldatas, uint256 startBlock, uint256 endBlock, string description, uint8 proposalType)"
       ];
-      
+
       const iface = new ethers.Interface(abi);
       const decodedLog = iface.parseLog({
         topics: log.topics,
@@ -270,8 +270,8 @@ This bot monitors the Scroll governance contract for new proposals and sends rea
   }
 
   private formatProposalMessage(proposal: ProposalData, blockNumber: number): string {
-    const shortDescription = proposal.description.length > 500 
-      ? proposal.description.substring(0, 500) + '...' 
+    const shortDescription = proposal.description.length > 500
+      ? proposal.description.substring(0, 500) + '...'
       : proposal.description;
 
     return `🏛️ **NEW SCROLL GOVERNANCE PROPOSAL**
@@ -315,7 +315,7 @@ ${shortDescription}
       } catch (error: any) {
         failureCount++;
         failedChatIds.push(chatId);
-        
+
         // If user blocked the bot or chat not found, remove them from subscribers
         if (error.code === 403 || error.code === 400) {
           console.log(`🚫 Removing inactive subscriber: ${chatId} (${subscriber.username || subscriber.firstName || 'Unknown'})`);
@@ -339,33 +339,41 @@ ${shortDescription}
       const currentBlock = await this.getCurrentBlock();
 
       const fromBlock = this.lastProcessedBlock === 0 ? currentBlock - 499 : this.lastProcessedBlock + 1;
-      
+
       if (fromBlock > currentBlock) {
         return; // No new blocks to check
       }
 
       console.log(`🔍 Checking blocks ${fromBlock} to ${currentBlock} for new proposals...`);
 
-      // todo: if fromBlock is too far back, provider will throw an error. Then we should truncate fromBlock to a reasonable value and do multiple queries
-      const logs = await this.provider.getLogs({
-        address: GOVERNANCE_CONTRACT,
-        topics: [PROPOSAL_CREATED_TOPIC],
-        fromBlock: fromBlock,
-        toBlock: currentBlock
-      });
+      // Fetch by batches of maximum MAX_BLOCKS_PER_CHECK block ranges
+      let tmpFromBlock = fromBlock;
+      let tmpToBlock = min(fromBlock + MAX_BLOCKS_PER_CHECK, currentBlock);
+      while (tmpFromBlock <= currentBlock) {
+        console.log(`📦 Fetching logs from block ${tmpFromBlock} to ${tmpToBlock} (${tmpToBlock - tmpFromBlock} blocks)`);
+        const logs = await this.provider.getLogs({
+          address: GOVERNANCE_CONTRACT,
+          topics: [PROPOSAL_CREATED_TOPIC],
+          fromBlock: tmpFromBlock,
+          toBlock: tmpToBlock
+        });
 
-      console.log(`📊 Found ${logs.length} proposal events`);
+        console.log(`📊 Found ${logs.length} proposal events`);
 
-      for (const log of logs) {
-        const proposalData = this.decodeProposalData(log);
-        if (proposalData) {
-          const message = this.formatProposalMessage(proposalData, log.blockNumber);
-          await this.sendNotification(message);
-          console.log(`✅ Processed proposal ${proposalData.proposalId}`);
+        for (const log of logs) {
+          const proposalData = this.decodeProposalData(log);
+          if (proposalData) {
+            const message = this.formatProposalMessage(proposalData, log.blockNumber);
+            await this.sendNotification(message);
+            console.log(`✅ Processed proposal ${proposalData.proposalId}`);
+          }
         }
-      }
 
-      this.saveLastProcessedBlock(currentBlock);
+        this.saveLastProcessedBlock(tmpToBlock);
+
+        tmpFromBlock = tmpToBlock;
+        tmpToBlock = min(tmpFromBlock + MAX_BLOCKS_PER_CHECK, currentBlock);
+      }
     } catch (error) {
       console.error('Error checking for new proposals:', error);
     }
@@ -373,10 +381,10 @@ ${shortDescription}
 
   public async start() {
     console.log('🚀 Starting Scroll Governance Bot...');
-    
+
     // Initial check
     await this.checkForNewProposals();
-    
+
     // Set up interval to check for new proposals
     setInterval(async () => {
       await this.checkForNewProposals();
@@ -427,4 +435,8 @@ function blockNumberToDate(blockNumber: string): string {
   const timestamp = genesisBlockTimestamp + (parseInt(blockNumber) * blockTime);
 
   return new Date(timestamp * 1000).toUTCString();
+}
+
+const min = (a: number, b: number): number => {
+  return a < b ? a : b;
 }
