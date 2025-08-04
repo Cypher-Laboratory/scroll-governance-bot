@@ -272,7 +272,10 @@ This bot monitors the Scroll governance contract for new proposals and sends rea
     }
   }
 
-  private formatProposalMessage(proposal: ProposalData, blockNumber: number): string {
+  private async formatProposalMessage(proposal: ProposalData, blockNumber: number): Promise<string> {
+
+    const { startDate, endDate } = await estimateDates(proposal.startBlock, proposal.endBlock, this.provider);
+
     const shortDescription = proposal.description.length > 500
       ? proposal.description.substring(0, 500) + '...'
       : proposal.description;
@@ -284,8 +287,8 @@ This bot monitors the Scroll governance contract for new proposals and sends rea
 📦 **Block:** ${blockNumber}
 
 🗳️ **Voting Period:**
-- Start Block: ${proposal.startBlock} (~${blockNumberToDate(proposal.startBlock)})
-- End Block: ${proposal.endBlock} (~${blockNumberToDate(proposal.endBlock)})
+- Start Block: ${proposal.startBlock} (~${startDate})
+- End Block: ${proposal.endBlock} (~${endDate})
 
 📝 **Description:**
 \`\`\`Markdown
@@ -296,7 +299,9 @@ ${shortDescription}
 🔗 **Contract:** \`${GOVERNANCE_CONTRACT}\`
 📊 **Proposal Type:** ${proposal.proposalType}
 
-[View on Scroll Explorer](https://scrollscan.com/tx/${proposal.txHash})`;
+[View on Scroll Explorer](https://scrollscan.com/tx/${proposal.txHash})
+
+Be aware, date estimation are not exact and may vary based on network conditions`;
   }
 
   private async sendNotification(message: string) {
@@ -366,7 +371,7 @@ ${shortDescription}
         for (const log of logs) {
           const proposalData = this.decodeProposalData(log);
           if (proposalData) {
-            const message = this.formatProposalMessage(proposalData, log.blockNumber);
+            const message = await this.formatProposalMessage(proposalData, log.blockNumber);
             await this.sendNotification(message);
             console.log(`✅ Processed proposal ${proposalData.proposalId}`);
           }
@@ -440,15 +445,57 @@ process.once('SIGTERM', () => {
 // Start monitoring
 bot.start().catch(console.error);
 
-
-function blockNumberToDate(blockNumber: string): string {
-  const blockTime = 3; // Average block time in seconds on Scroll
-  const genesisBlockTimestamp = 1696917600; // Timestamp of the Scroll mainnet genesis block
-  const timestamp = genesisBlockTimestamp + (parseInt(blockNumber) * blockTime);
-
-  return new Date(timestamp * 1000).toUTCString();
-}
-
 const min = (a: number, b: number): number => {
   return a < b ? a : b;
+}
+const max = (a: number, b: number): number => {
+  return a > b ? a : b;
+}
+const abs = (a: number): number => {
+  return a < 0 ? -a : a;
+}
+
+async function estimateDates(startBlock: string, endBlock: string, provider: ethers.JsonRpcProvider): Promise<{ startDate: string, endDate: string }> {
+  const startBlockInt = parseInt(startBlock);
+  const endBlockInt = parseInt(endBlock);
+
+  // Get the headers from the last 5 blocks to estimate block time
+
+  const latestBlockNumber = await provider.getBlockNumber();
+
+  if (latestBlockNumber < 5) {
+    // If there are not enough blocks, return a default date
+    return { startDate: new Date(0).toUTCString(), endDate: new Date(0).toUTCString() };
+  }
+
+  const BLOCK_INTERVAL = 10000; // Number of blocks to consider for interval calculation
+
+  const blockNumbers = [max(latestBlockNumber - BLOCK_INTERVAL, 0), latestBlockNumber]
+
+  // Batch request for all 5 block headers
+  const blockHeaderPromises = blockNumbers.map(blockNumber =>
+    provider.getBlock(blockNumber)
+  );
+
+  // Execute all requests in parallel
+  const blockHeaders = await Promise.all(blockHeaderPromises);
+
+  // Return 0,0 if at least one of the blocks is null
+  if (blockHeaders.some(header => header === null)) {
+    return { startDate: new Date(0).toUTCString(), endDate: new Date(0).toUTCString() };
+  }
+
+  // Calculate average block time
+  const timestamps = blockHeaders.map(header => header!.timestamp);
+
+  // (Oldest - last block) / BLOCK_INTERVAL
+  const averageBlockTime = (timestamps[1] - timestamps[0]) / BLOCK_INTERVAL; // seconds
+
+  // Estimate start and end dates
+  const blockDiffWithStart = abs(startBlockInt - latestBlockNumber);
+  const blockDiffWithEnd = abs(endBlockInt - latestBlockNumber);
+  const startDate = new Date(1000 * (timestamps[1] + blockDiffWithStart * averageBlockTime)).toUTCString();
+  const endDate = new Date(1000 * (timestamps[1] + blockDiffWithEnd * averageBlockTime)).toUTCString();
+
+  return { startDate, endDate };
 }
